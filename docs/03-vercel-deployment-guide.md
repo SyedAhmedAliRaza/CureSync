@@ -71,12 +71,12 @@ async rewrites() {
 }
 ```
 
-Or use an environment variable for flexibility:
+Or use an environment variable for flexibility (already implemented in the repo):
 ```js
-destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*`,
+destination: `${process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*`,
 ```
 
-Then set `NEXT_PUBLIC_API_URL` in Vercel's environment variables dashboard.
+Then set `API_URL` in Vercel's environment variables dashboard (a private, non-public variable — the value is only read server-side at build time).
 
 ### 3. Update Backend CORS Origins
 
