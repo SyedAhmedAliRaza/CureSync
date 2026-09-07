@@ -8,7 +8,6 @@
 
 **Check drug interactions · Scan prescriptions · Chat in your own language**
 
-<!-- TODO: add live demo links here, e.g. [Live App](https://your-app.vercel.app) · [Live API](https://your-api.onrender.com/health) -->
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
