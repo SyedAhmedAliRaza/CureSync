@@ -44,10 +44,32 @@ IMPORTANT DISCLAIMERS you must communicate:
 
 Keep responses concise, well-structured, and actionable."""
 
+# Map CureSync language codes to descriptive names used inside prompts.
+# Passing the full language name (with native script) instead of a raw code
+# like "sd" makes the model far more reliable at producing the correct
+# language and script instead of mixing English or transliterating.
+LANGUAGE_NAMES = {
+    "en": "English",
+    "ur": "Urdu (اردو, Arabic/Nastaliq script)",
+    "bal": "Balochi (بلوچی, Arabic script)",
+    "sd": "Sindhi (سنڌي, Arabic script)",
+    "ps": "Pashto (پښتو, Arabic script)",
+    "pa": "Punjabi (پنجابی, Shahmukhi Arabic script as used in Pakistan)",
+}
+
+
+def resolve_language_name(code: str) -> str:
+    """Resolve a CureSync language code to a descriptive language name."""
+    if not code:
+        return "English"
+    key = code.lower().strip()
+    return LANGUAGE_NAMES.get(key, key if len(key) > 3 else "English")
+
+
 LANGUAGE_INSTRUCTION = """IMPORTANT: Respond entirely in the following language: {language}.
-Use the native script and natural phrasing for that language.
-Language codes: en=English, bal=Balochi, sd=Sindhi, ps=Pashto, pa=Punjabi.
-If the language is not English, still keep medicine names in English alongside the local translation."""
+Write every sentence of your reply ONLY in {language} — do NOT mix in English sentences.
+Use the native script of the language (do NOT transliterate into Roman/Latin letters).
+Keep medicine/drug names in English inside parentheses alongside the local translation."""
 
 INTERACTION_ANALYSIS_PROMPT = """You are a clinical pharmacology assistant analyzing drug interactions.
 
@@ -97,7 +119,9 @@ class AIService:
 
         system_prompt = CHAT_SYSTEM_PROMPT
         if language and language != "en":
-            system_prompt += "\n\n" + LANGUAGE_INSTRUCTION.format(language=language)
+            system_prompt += "\n\n" + LANGUAGE_INSTRUCTION.format(
+                language=resolve_language_name(language)
+            )
 
         messages = [{"role": "system", "content": system_prompt}]
 
@@ -159,7 +183,9 @@ class AIService:
         ]
 
         if language and language != "en":
-            messages[0]["content"] += "\n\n" + LANGUAGE_INSTRUCTION.format(language=language)
+            messages[0]["content"] += "\n\n" + LANGUAGE_INSTRUCTION.format(
+                language=resolve_language_name(language)
+            )
 
         try:
             response = Generation.call(

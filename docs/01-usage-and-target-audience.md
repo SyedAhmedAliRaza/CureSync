@@ -17,7 +17,7 @@ The app name "CureSync" reflects its mission: synchronizing your medication rout
 ### 2. AI Health Assistant (Chat)
 - **What it does**: A conversational AI chatbot powered by Alibaba Cloud's Qwen LLM that answers medication-related questions only. It refuses off-topic queries to maintain focus and safety.
 - **How to use**: Navigate to "Chat" from the navbar. Type any medication question (e.g., "What are the side effects of Metformin?"). The AI responds with patient-friendly information and always recommends consulting a healthcare professional.
-- **Key detail**: Supports conversation history, session management (multiple chat threads), and multilingual responses (English, Balochi, Sindhi, Pashto, Punjabi).
+- **Key detail**: Supports conversation history, session management (multiple chat threads), and multilingual responses (English, Urdu, Balochi, Sindhi, Pashto, Punjabi).
 
 ### 3. Prescription Scanner (OCR)
 - **What it does**: Users upload a photo of a handwritten or printed prescription. The system uses AI-powered OCR (Qwen-VL vision model) to extract text, then parses it into structured medication entries that can be added directly to the user's medication schedule.
@@ -30,7 +30,7 @@ The app name "CureSync" reflects its mission: synchronizing your medication rout
 - **Key detail**: Medications have active/inactive states for easy management. Users can edit medication names inline after selecting from the drug search.
 
 ### 5. Multilingual Support
-- **What it does**: The entire app interface and AI responses can be switched between English and four regional languages: Balochi, Sindhi, Pashto, and Punjabi.
+- **What it does**: The entire app interface and AI responses can be switched between English and five regional languages: Urdu, Balochi, Sindhi, Pashto, and Punjabi.
 - **How to use**: Click the language selector in the navbar to switch languages. AI responses automatically adapt to the selected language while keeping medicine names in English for accuracy.
 
 ### 6. Dark / Light Mode
@@ -55,7 +55,7 @@ The app name "CureSync" reflects its mission: synchronizing your medication rout
 6. **Healthcare professionals** (doctors, pharmacists) looking for a quick secondary check on drug interactions before prescribing or dispensing medications.
 
 ### Geographic Focus
-- The multilingual support (Balochi, Sindhi, Pashto, Punjabi) specifically targets populations in Pakistan, Afghanistan, and surrounding regions where access to digital health tools in local languages is limited.
+- The multilingual support (Urdu, Balochi, Sindhi, Pashto, Punjabi) specifically targets populations in Pakistan, Afghanistan, and surrounding regions where access to digital health tools in local languages is limited.
 - The app uses Alibaba Cloud's international DashScope API (Singapore endpoint), making it suitable for Asia-Pacific deployment.
 
 
@@ -67,7 +67,7 @@ The app name "CureSync" reflects its mission: synchronizing your medication rout
 | User unsure about side effects | AI Chat | Gets clear, patient-friendly explanation |
 | Doctor gives printed prescription | Prescription Scanner | Extracts meds from photo, adds to schedule |
 | Elderly user needs simplicity | Schedule + Scanner | Adds meds via prescription photo instead of manual typing |
-| Non-English speaker needs info | Language Switcher | AI responds in Pashto/Punjabi/Sindhi/Balochi |
+| Non-English speaker needs info | Language Switcher | AI responds in Urdu/Pashto/Punjabi/Sindhi/Balochi |
 | Checking new prescription against existing meds | Interactions + Schedule | Cross-references all current medications |
 
 

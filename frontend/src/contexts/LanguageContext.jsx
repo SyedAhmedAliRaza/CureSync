@@ -4,6 +4,7 @@ import { createContext, useContext, useState } from 'react';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
+  { code: 'ur', name: 'Urdu' },
   { code: 'bal', name: 'Balochi' },
   { code: 'sd', name: 'Sindhi' },
   { code: 'ps', name: 'Pashto' },

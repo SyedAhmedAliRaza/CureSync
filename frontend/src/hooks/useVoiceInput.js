@@ -9,6 +9,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 // Map CureSync language codes to BCP-47 locales for the Web Speech API
 const LANGUAGE_MAP = {
   en: 'en-US',
+  ur: 'ur-PK',    // Urdu    - Urdu-Pakistan
   bal: 'ur-PK',   // Balochi - closest supported locale (Urdu-Pakistan)
   sd: 'ur-PK',    // Sindhi  - closest supported locale (Urdu-Pakistan)
   ps: 'ps-AF',    // Pashto  - Pashto-Afghanistan
