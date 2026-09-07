@@ -21,6 +21,9 @@ frontend/.next/
 # Old Vite source backup (kept locally, not tracked)
 frontend_src_backup/
 
+# Local documentation for NotebookLM (not tracked)
+docs/
+
 # Test screenshots at repo root
 /*.png
 
