@@ -45,38 +45,15 @@ Render runs a real Python process (not serverless), so **no code changes** are n
 - 512 MB RAM — sufficient for CureSync
 - 750 free hours/month
 
-### 2. Update `next.config.mjs` Rewrite Destination
+### 2. Rewrite Destination (already env-var based)
 
-**Current** (development):
-```js
-async rewrites() {
-  return [
-    {
-      source: '/api/:path*',
-      destination: 'http://localhost:8000/api/:path*',
-    },
-  ];
-}
-```
-
-**Required change** (production):
-```js
-async rewrites() {
-  return [
-    {
-      source: '/api/:path*',
-      destination: 'https://curesync-api.onrender.com/api/:path*',
-    },
-  ];
-}
-```
-
-Or use an environment variable for flexibility (already implemented in the repo):
+`next.config.mjs` resolves the backend URL from the environment, so no code change is needed between local development and production:
 ```js
 destination: `${process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*`,
 ```
 
-Then set `API_URL` in Vercel's environment variables dashboard (a private, non-public variable — the value is only read server-side at build time).
+- **Local development**: no env var set → falls back to `http://localhost:8000`
+- **Production**: set `API_URL` in Vercel's environment variables dashboard (a private, non-public variable — the value is only read server-side at build time, so it never reaches the browser bundle)
 
 ### 3. Update Backend CORS Origins
 
@@ -110,7 +87,7 @@ The Next.js frontend is **fully Vercel-compatible** with no code changes needed 
 - Static assets in `public/` are served automatically
 - `icon.png` in `src/app/` works as favicon
 
-**Vercel Environment Variables**: None required (unless using the env-var-based rewrite URL).
+**Vercel Environment Variables**: One optional variable — `API_URL` set to the Render backend URL (e.g. `https://curesync-api.onrender.com`). Use the plain `API_URL` name (no `NEXT_PUBLIC_` prefix): the rewrite is evaluated server-side at build time, so the value never reaches the browser bundle. The config also accepts `NEXT_PUBLIC_API_URL` as a fallback. No variables are needed for local development — the rewrite falls back to `http://localhost:8000`.
 
 
 ## Deployment Steps
@@ -135,28 +112,23 @@ The Next.js frontend is **fully Vercel-compatible** with no code changes needed 
 
 > **Important**: Render uses the `$PORT` environment variable (not 8000). The start command must use `--port $PORT`.
 
-### Step 2: Update Frontend Config
-
-1. In `frontend/next.config.mjs`, change the rewrite destination:
-   ```js
-   destination: 'https://curesync-api.onrender.com/api/:path*',
-   ```
-2. Commit and push
-
-### Step 3: Deploy Frontend to Vercel
+### Step 2: Deploy Frontend to Vercel
 
 1. Go to [vercel.com](https://vercel.com) and click **Add New → Project**
 2. Import your GitHub repository
 3. Configure:
-   - **Framework Preset**: Next.js (auto-detected)
-   - **Root Directory**: `frontend`
+   - **Framework Preset**: Next.js (auto-detected once root is set)
+   - **Root Directory**: `frontend` ← **critical** (see troubleshooting below)
    - **Build Command**: `next build`
    - **Output Directory**: `.next`
-4. Click **Deploy**
-5. Wait for build (~1-2 minutes)
-6. Your app is live at `https://your-project.vercel.app`
+4. Add the environment variable `API_URL` = your Render URL (e.g. `https://curesync-api.onrender.com`) — no `NEXT_PUBLIC_` prefix needed
+5. Click **Deploy**
+6. Wait for build (~1-2 minutes); the build log should show the Next.js route table (`/`, `/chat`, `/login`, ...)
+7. Your app is live at `https://your-project.vercel.app`
 
-### Step 4: Update CORS on Render
+> **Note**: The rewrite URL no longer requires a code change — `next.config.mjs` reads `API_URL` at build time and falls back to `http://localhost:8000` when absent. If you add or change the env var after the first deploy, redeploy so the rewrite picks it up.
+
+### Step 3: Update CORS on Render
 
 1. Go back to Render dashboard → your service → Environment
 2. Update `CORS_ORIGINS` to include your Vercel URL:
@@ -181,9 +153,12 @@ The Render free tier spins down after 15 minutes of inactivity. The first reques
 
 | Issue | Cause | Solution |
 |---|---|---|
+| Frontend shows `404: NOT_FOUND` (plain Vercel page) | Root Directory left at repo root — Vercel found no `package.json` and deployed an empty site | Settings → General → Root Directory → set to `frontend`, then redeploy |
+| Render start command shows `gunicorn your_application.wsgi` | Render's default placeholder for Django apps | Replace entirely with `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (FastAPI needs ASGI, and gunicorn isn't in requirements.txt) |
+| Vercel warns about `NEXT_PUBLIC_` prefix exposing values | Public prefixes are inlined into the browser bundle | Use plain `API_URL` instead — the rewrite runs server-side at build time (already implemented) |
 | First request takes 30-50 seconds | Render cold start (free tier) | Use a cron service to keep the backend warm |
-| API calls fail with CORS error | CORS doesn't include Vercel domain | Add Vercel URL to `CORS_ORIGINS` on Render |
-| API calls return 404 | Rewrite URL not updated | Update `next.config.mjs` destination to Render URL |
+| API calls fail with CORS error | CORS doesn't include Vercel domain | Add Vercel URL to `CORS_ORIGINS` on Render (exact match, no trailing slash) |
+| API calls return 404 | Rewrite URL not resolved | Set `API_URL` on Vercel to the Render URL; redeploy after changing it |
 | AI features return offline responses | `DASHSCOPE_API_KEY` not set on Render | Add the env var in Render dashboard |
 | Auth fails | Supabase keys not set on Render | Add all `SUPABASE_*` env vars in Render dashboard |
 | Port binding error | Using hardcoded port 8000 | Use `$PORT` in the Render start command |
@@ -204,17 +179,18 @@ The Render free tier spins down after 15 minutes of inactivity. The first reques
 
 ## Summary: Deployment Readiness
 
-| Aspect | Status | Action Required |
+| Aspect | Status | Notes |
 |---|---|---|
-| Next.js frontend | **Ready** | No changes needed |
-| API rewrite URL | **Needs update** | Change `localhost:8000` to Render URL in `next.config.mjs` |
-| Backend on Render | **Ready to deploy** | Create service, set env vars, deploy from Git |
-| CORS configuration | **Needs update** | Add Vercel domain to `CORS_ORIGINS` on Render |
-| Start command | **Needs adjustment** | Use `--port $PORT` instead of hardcoded 8000 |
-| Environment variables | **Needs setup** | Set all keys in Render dashboard |
-| Build process | **Ready** | `next build` succeeds cleanly |
+| Next.js frontend | **Ready** | Builds cleanly; all pages static-prerendered |
+| API rewrite URL | **Done (env-var based)** | `next.config.mjs` reads `API_URL`; set it in the Vercel dashboard — no code change needed |
+| Backend on Render | **Ready to deploy** | Create service with Root Directory `backend`, set env vars, deploy from Git |
+| CORS configuration | **Set during deploy** | `CORS_ORIGINS` on Render = exact Vercel URL (no trailing slash) |
+| Start command | **Documented** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (replace Render's gunicorn default) |
+| Environment variables | **Set during deploy** | All keys in the Render dashboard; only `API_URL` on Vercel |
+| Build process | **Ready** | `next build` succeeds on Vercel (~40s) |
 | Static assets | **Ready** | `public/` directory and `icon.png` work out of the box |
 | Tailwind/CSS | **Ready** | No changes needed |
 | Authentication | **Ready** | JWT-based auth works with any backend URL |
+| Multilingual AI | **Ready** | Urdu, Balochi, Sindhi, Pashto, Punjabi replies verified in native scripts |
 
-**Bottom line**: Deploy the backend to Render (free, takes ~5 minutes), deploy the frontend to Vercel (free, takes ~2 minutes), update one line in `next.config.mjs`, and set CORS origins on Render. No structural code changes required.
+**Bottom line**: Both halves of the stack deploy from the same GitHub repository — Render builds `backend/` with the uvicorn start command, Vercel builds `frontend/` with the `API_URL` environment variable. The only cross-platform wiring is setting `CORS_ORIGINS` on Render to match your Vercel domain. Total infrastructure cost: $0 (excluding AI tokens).

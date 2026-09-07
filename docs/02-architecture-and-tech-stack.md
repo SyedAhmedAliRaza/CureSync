@@ -58,6 +58,7 @@ CureSync follows a **two-tier client-server architecture** with a clear separati
 | **Theming** | next-themes | 0.4.x | Class-based dark/light mode with system preference detection |
 | **HTTP Client** | Axios | 1.7.x | API calls with interceptors (auth headers, 401 redirect) |
 | **Markdown** | react-markdown + remark-gfm | 10.x / 4.x | Renders AI-generated markdown in chat responses |
+| **Voice Input** | Web Speech API (native) | - | Browser-native speech-to-text in the AI Chat input (Chat page only) |
 | **Build** | PostCSS + Tailwind plugin | - | Compiles Tailwind v4 utility classes |
 
 ### Backend
@@ -78,7 +79,7 @@ CureSync follows a **two-tier client-server architecture** with a clear separati
 
 | Service | Provider | Purpose |
 |---|---|---|
-| **Database + Auth** | Supabase | PostgreSQL database for generics, drugs, interactions, medications, chat sessions. Also handles user signup/login with JWT tokens. |
+| **Database + Auth** | Supabase | PostgreSQL database for generics, drugs, interactions, medications, chat sessions. Also handles user signup/login with JWT tokens. Live data: 1,939 generic medications and 25,110 interaction records. |
 | **AI Text Generation** | Alibaba Cloud DashScope (International, Singapore) | Qwen-plus model for health chat, interaction analysis, prescription parsing |
 | **AI Vision / OCR** | Alibaba Cloud DashScope (International, Singapore) | Qwen-vl-plus model for extracting text from prescription images |
 | **Drug Database** | Local JSON files + Supabase | `drugs_database.json` as local fallback; `drug_aliases.json` (~140 entries) maps common/brand names to generic names |
@@ -114,11 +115,14 @@ CureSync/
 │   │   │   ├── ChatMessage.jsx        # Chat bubble component
 │   │   │   ├── InteractionCard.jsx    # Interaction severity card
 │   │   │   ├── MedicationRow.jsx      # Medication table row
-│   │   └── contexts/
-│   │       ├── AuthContext.jsx        # Authentication state (login/signup/logout)
-│   │       └── LanguageContext.jsx    # UI language state
-│   └── services/
-│       └── api.js                 # Axios client + all API functions
+│   │   │   └── VoiceInputButton.jsx   # Speech-to-text button (Chat page only)
+│   │   ├── contexts/
+│   │   │   ├── AuthContext.jsx        # Authentication state (login/signup/logout)
+│   │   │   └── LanguageContext.jsx    # UI language state (en/ur/bal/sd/ps/pa)
+│   │   ├── hooks/
+│   │   │   └── useVoiceInput.js       # Web Speech API hook (Chat page only)
+│   │   └── services/
+│   │       └── api.js                 # Axios client + all API functions
 │   ├── next.config.mjs               # API rewrite proxy config
 │   ├── postcss.config.mjs            # Tailwind PostCSS plugin
 │   └── package.json
@@ -138,7 +142,7 @@ CureSync/
 │   │   │   ├── medications.py         # /api/medications/* (CRUD)
 │   │   │   └── ocr.py                 # /api/ocr/scan (prescription image)
 │   │   ├── services/
-│   │   │   ├── ai_service.py          # DashScope/Qwen LLM integration
+│   │   │   ├── ai_service.py          # DashScope/Qwen LLM integration + language name resolution
 │   │   │   ├── db_service.py          # Supabase client (auth, queries)
 │   │   │   ├── drug_service.py        # Drug search + alias resolution
 │   │   │   ├── medication_service.py  # Medication CRUD + scheduler
@@ -219,13 +223,18 @@ User uploads prescription image
 
 ### 4. AI Chat Flow
 ```
-User types question in chat input
+User types question in chat input (or uses the microphone button for
+voice input via the Web Speech API)
   → api.js: POST /api/chat {message, history[], session_id, language}
     → Backend: chat.py → ai_service.health_chat()
       → Build messages array: [system_prompt, ...history, user_message]
-      → If language != "en": append language instruction to system prompt
+      → If language != "en":
+          → resolve_language_name("sd") → "Sindhi (سنڌي, Arabic script)"
+          → append language instruction: reply ONLY in that language,
+            native script (no Roman transliteration), medicine names
+            kept in English parentheses
       → DashScope API: Generation.call(model="qwen-plus", messages=[...])
-        ← Returns AI response text
+        ← Returns AI response text in the requested language/script
       → If session_id provided: save message + response to Supabase chat_sessions
         ← Returns {content, session_id}
   → Frontend: ChatMessage component renders AI response (markdown-aware)
@@ -259,7 +268,7 @@ The root layout wraps all pages in three context providers:
   <body>
     <ThemeProvider>          ← next-themes (dark/light class toggle)
       <AuthProvider>         ← user state, login/signup/logout functions
-        <LanguageProvider>   ← current language (en/bal/sd/ps/pa)
+        <LanguageProvider>   ← current language (en/ur/bal/sd/ps/pa)
           {children}         ← page content
         </LanguageProvider>
       </AuthProvider>
@@ -311,4 +320,4 @@ All pages that require authentication are wrapped in `<ProtectedRoute>`, which c
 | `BACKEND_HOST` | Server bind address (default: 0.0.0.0) |
 | `BACKEND_PORT` | Server port (default: 8000) |
 
-The frontend does NOT require any environment variables at build time. All API calls go through the Next.js rewrite proxy.
+The frontend requires only one optional environment variable in production: `API_URL` on Vercel (the deployed Render backend URL, e.g. `https://curesync-api.onrender.com`), which the Next.js rewrite proxy reads at build time. In local development no variables are needed — the rewrite falls back to `http://localhost:8000`.
