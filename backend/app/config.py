@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dashscope
 
 # Load .env from backend directory
 _env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -11,6 +12,7 @@ load_dotenv(_env_path)
 # Must be set BEFORE importing dashscope modules
 _dashscope_base = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope-intl.aliyuncs.com/api/v1")
 os.environ["DASHSCOPE_BASE_URL"] = _dashscope_base
+dashscope.base_http_api_url = _dashscope_base
 
 
 class Settings:
@@ -31,8 +33,8 @@ class Settings:
     DRUGS_DB_PATH: Path = Path(__file__).resolve().parent / "data" / "drugs_database.json"
 
     # Qwen model names
-    QWEN_TEXT_MODEL: str = "qwen-plus"
-    QWEN_VL_MODEL: str = "qwen-vl-plus"
+    QWEN_TEXT_MODEL: str = os.getenv("QWEN_TEXT_MODEL", "qwen-plus")
+    QWEN_VL_MODEL: str = os.getenv("QWEN_VL_MODEL", "qwen3-vl-plus")
 
     # Supabase
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
