@@ -27,7 +27,7 @@ export default function SignupPage() {
       await signup(email, password, fullName);
       router.push(`/login?fromSignup=true&email=${encodeURIComponent(email)}`);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Signup failed. Please try again.');
+      setError(err.response?.data?.detail || err.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
