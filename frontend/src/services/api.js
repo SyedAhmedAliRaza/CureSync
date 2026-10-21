@@ -1,13 +1,13 @@
-'use client';
-
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  // In production (Vercel), VITE_API_URL must point to the Render backend.
+  // In local dev, falls back to '/api' which Vite proxies to localhost:8000.
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 30000,
 });
 
-// -- Auth interceptor --------------------------------------------------------
+// ── Auth interceptor ──────────────────────────────────────────────────────
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('curesync_token');
@@ -29,7 +29,7 @@ api.interceptors.response.use(
   }
 );
 
-// -- Auth --------------------------------------------------------------------
+// ── Auth ──────────────────────────────────────────────────────────────────
 
 export async function signup(email, password, fullName) {
   const { data } = await api.post('/auth/signup', {
@@ -60,7 +60,7 @@ export async function getMe() {
   return data;
 }
 
-// -- Chat --------------------------------------------------------------------
+// ── Chat ──────────────────────────────────────────────────────────────────
 
 export async function sendChatMessage(message, history = [], sessionId = null, language = 'en') {
   const { data } = await api.post('/chat', { message, history, session_id: sessionId, language });
@@ -81,14 +81,14 @@ export async function deleteChatSession(sessionId) {
   await api.delete(`/chat/sessions/${sessionId}`);
 }
 
-// -- Interactions ------------------------------------------------------------
+// ── Interactions ──────────────────────────────────────────────────────────
 
 export async function checkInteractions(medicines, language = 'en') {
   const { data } = await api.post('/interactions/check', { medicines, language });
   return data;
 }
 
-// -- Drugs -------------------------------------------------------------------
+// ── Drugs ─────────────────────────────────────────────────────────────────
 
 export async function searchDrugs(query, limit = 10) {
   const { data } = await api.get('/drugs/search', { params: { q: query, limit } });
@@ -105,7 +105,7 @@ export async function listAllDrugNames() {
   return data;
 }
 
-// -- OCR / Prescription Scanning ---------------------------------------------
+// ── OCR / Prescription Scanning ───────────────────────────────────────────
 
 export async function scanPrescription(file) {
   const formData = new FormData();
@@ -117,7 +117,7 @@ export async function scanPrescription(file) {
   return data;
 }
 
-// -- Medications / Schedule --------------------------------------------------
+// ── Medications / Schedule ────────────────────────────────────────────────
 
 export async function listMedications(activeOnly = true) {
   const { data } = await api.get('/medications', { params: { active_only: activeOnly } });
