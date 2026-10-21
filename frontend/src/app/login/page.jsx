@@ -27,7 +27,7 @@ function LoginForm() {
       router.push('/');
     } catch (err) {
       setNotice('');
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.detail || err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
